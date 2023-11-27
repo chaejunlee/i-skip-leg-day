@@ -8,8 +8,8 @@ export default async function Home() {
     return <JoinNow />;
   }
   return (
-    <main className="flex min-h-screen flex-col bg-gray-800 text-white">
-      <div className="px-4 py-4 text-2xl">Workout of The Day</div>
+    <main className="flex min-h-screen flex-col">
+      <h1 className="px-4 py-4 text-2xl">Workout Log</h1>
       <div className="flex-grow px-4">
         <NewWorkoutSession />
       </div>
@@ -18,12 +18,19 @@ export default async function Home() {
 }
 
 function NewWorkoutSession() {
-  return <button className="w-full rounded border py-2">New Workout</button>;
+  return (
+    <Link
+      href="/workout"
+      className="block w-full rounded border py-2 text-center"
+    >
+      New Workout
+    </Link>
+  );
 }
 
 function JoinNow() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center bg-gray-800 text-white">
+    <main className="flex min-h-screen flex-col items-center justify-center">
       <h1 className="mx-auto text-center text-2xl font-semibold">
         Join iSkipLegDay™️ Today!
       </h1>
