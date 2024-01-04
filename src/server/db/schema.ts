@@ -55,7 +55,7 @@ export const cardioWorkoutRelations = relations(cardioWorkout, ({ many }) => ({
 
 export const cardios = mysqlTable("cardio", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
-  date: datetime("date").default(sql`CURRENT_TIMESTAMP`),
+  dateId: datetime("dateId").default(sql`CURRENT_TIMESTAMP`),
   distance: bigint("distance", { mode: "number" }).notNull(),
   time: bigint("time", { mode: "number" }).notNull(),
   workoutId: bigint("workoutId", { mode: "number" }),
@@ -69,7 +69,7 @@ export const cardiosWorkoutRelations = relations(cardios, ({ one }) => ({
 }));
 
 export const cardioRelations = relations(cardios, ({ one }) => ({
-  day: one(days, { fields: [cardios.date], references: [days.date] }),
+  day: one(days, { fields: [cardios.dateId], references: [days.date] }),
 }));
 
 export const workouts = mysqlTable("workout", {
