@@ -77,6 +77,7 @@ export const workouts = mysqlTable("workout", {
   dateId: bigint("dateId", { mode: "number" }),
   trainId: bigint("trainId", { mode: "number" }),
   exerciseId: bigint("exerciseId", { mode: "number" }),
+  weight: bigint("weight", { mode: "number" }).notNull(),
   rpe: bigint("rpe", { mode: "number" }).notNull(),
   description: varchar("description", { length: 255 }),
 });
@@ -96,7 +97,6 @@ export const sets = mysqlTable("set", {
   workoutId: bigint("workoutId", { mode: "number" }),
   sets: bigint("sets", { mode: "number" }).notNull(),
   reps: bigint("reps", { mode: "number" }).notNull(),
-  weight: bigint("weight", { mode: "number" }).notNull(),
 });
 
 export const setsRelations = relations(sets, ({ one }) => ({
