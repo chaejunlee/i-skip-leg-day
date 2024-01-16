@@ -1,6 +1,41 @@
 "use client";
 
-import { type ChangeEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const SPLITS_MAP = {
   "push-pull": ["➡️ Push", "⬅️ Pull", "⏺️ Other"],
@@ -16,10 +51,22 @@ const config: {
   split: "push-pull",
 } as const;
 
+function getPreviousSplitOption() {
+  return getLocalStorage("workout-split-option");
+}
+
+function getLocalStorage(key: string) {
+  if (typeof localStorage === "undefined") return null;
+  return localStorage.getItem(key);
+}
+
+function setLocalStorage(key: string, value: string) {
+  if (typeof localStorage === "undefined") return null;
+  return localStorage.setItem(key, value);
+}
+
 function getSplitsOption(): SplitOption {
-  const previousSplitOption = localStorage.getItem(
-    "workout-split-option",
-  ) as SplitOption | null;
+  const previousSplitOption = getPreviousSplitOption();
 
   const splits = SPLITS_MAP[config.split];
 
@@ -41,85 +88,179 @@ const BODYPART = [
   "Abs",
 ] as const;
 
-type BodyPart = (typeof BODYPART)[number];
-
 const SPLITS_BODY_PART_MAP = {
   "➡️ Push": ["Chest", "Shoulders", "Triceps"],
   "⬅️ Pull": ["Back", "Biceps"],
   "⏺️ Other": ["Abs"],
   "⬆️ Upper": ["Chest", "Shoulders", "Triceps", "Back", "Biceps"],
-};
+} as const;
+
+const schema = z.object({
+  date: z.date().default(() => new Date()),
+  split: z.enum(["➡️ Push", "⬅️ Pull", "⏺️ Other", "⬆️ Upper"]),
+  bodyPart: z.enum(BODYPART).nullable(),
+});
+
+type FormSchema = z.infer<typeof schema>;
 
 export function WorkoutForm() {
-  const [date, setDate] = useState(new Date().toLocaleDateString("en-CA"));
-  const [split, setSplit] = useState<SplitOption>(getSplitsOption());
-  const [bodyPart, setBodyPart] = useState<BodyPart>("Chest");
+  const form = useForm<FormSchema>({
+    defaultValues: schema.parse({
+      date: new Date(),
+      split: getSplitsOption(),
+      bodyPart: null,
+    }),
+    resolver: zodResolver(schema),
+  });
+  const split = form.watch("split");
 
   const splits = SPLITS_MAP[config.split];
   const bodyParts = SPLITS_BODY_PART_MAP[split];
 
-  function handleSplitOptionSelect(e: ChangeEvent<HTMLSelectElement>) {
-    setSplit(e.target.value as SplitOption);
-    localStorage.setItem("workout-split-option", e.target.value);
+  function onSubmit(data: FormSchema) {
+    console.log(data);
+    toast("You submitted the following values:", {
+      description: (
+        <pre className="mt-2 rounded-md bg-slate-950 p-4">
+          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+        </pre>
+      ),
+    });
   }
 
   return (
-    <form className="flex flex-col gap-4">
-      <div className="flex flex-col">
-        <label htmlFor="workout-date">
-          <span>Date</span>
-        </label>
-        <input
-          id="workout-date"
-          value={date}
-          type="date"
-          className="mt-1 h-12 rounded border p-2 text-base"
-          onChange={(e) => setDate(e.target.value)}
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit((data) => {
+          onSubmit(data);
+        })}
+        className="flex flex-grow flex-col gap-4"
+      >
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "text-left font-normal",
+                        !field.value && "text-muted-foreground",
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="flex flex-col">
-        <label htmlFor="workout-split">
-          <span>Split</span>
-        </label>
-        <select
-          id="workout-split"
-          className="mt-1 h-12 rounded border p-2 text-base"
-          value={split}
-          onChange={handleSplitOptionSelect}
-        >
-          {splits.map((type) => (
-            <option key={type}>{type}</option>
-          ))}
-        </select>
-      </div>
-      <div className="flex flex-col">
-        <p>Body Part</p>
-        <div className="mt-1 flex h-44 flex-col divide-y divide-solid overflow-y-scroll rounded border">
-          {bodyParts.map((type) => (
-            <label className="flex gap-3 px-3 py-3" key={type} htmlFor={type}>
-              <input
-                type="radio"
-                id={type}
-                name="body-part"
-                className="w-4"
-                checked={bodyPart === type}
-                value={type}
-                onChange={(e) => {
-                  setBodyPart(e.target.value as BodyPart);
+        <FormField
+          control={form.control}
+          name="split"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel htmlFor="workout-split">Split</FormLabel>
+              <Select
+                onValueChange={(e) => {
+                  field.onChange(e);
+                  form.setValue("bodyPart", null);
                 }}
-              />
-              {type}
-            </label>
-          ))}
-          <div className="py-3 pl-10">
-            <input
-              className="w-full bg-transparent text-base"
-              placeholder="Add more ..."
-            />
-          </div>
-        </div>
-      </div>
-      <button className="rounded border p-2">Save</button>
-    </form>
+              >
+                <FormControl>
+                  <SelectTrigger className="px-4">
+                    <SelectValue placeholder="Select today's split" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {splits.map((type) => (
+                    <SelectItem className="w-full" key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="bodyPart"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Body Part</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "justify-between font-normal",
+                        !field.value && "text-muted-foreground",
+                      )}
+                    >
+                      {field.value
+                        ? bodyParts.find((body) => body === field.value)
+                        : "Select body part"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search body part..." />
+                    <CommandEmpty>No body part found.</CommandEmpty>
+                    <CommandGroup>
+                      {bodyParts.map((bodyPart) => (
+                        <CommandItem
+                          value={bodyPart}
+                          key={bodyPart}
+                          onSelect={() => {
+                            form.setValue("bodyPart", bodyPart);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              bodyPart === field.value
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                          {bodyPart}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">Submit</Button>
+      </form>
+    </Form>
   );
 }
