@@ -55,12 +55,12 @@ function getPreviousSplitOption() {
   return getLocalStorage("workout-split-option");
 }
 
-function getLocalStorage(key: string) {
+export function getLocalStorage(key: string) {
   if (typeof localStorage === "undefined") return null;
   return localStorage.getItem(key);
 }
 
-function setLocalStorage(key: string, value: string) {
+export function setLocalStorage(key: string, value: string) {
   if (typeof localStorage === "undefined") return null;
   return localStorage.setItem(key, value);
 }
