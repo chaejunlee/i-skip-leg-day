@@ -15,7 +15,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon } from "lucide-react";
@@ -23,6 +22,7 @@ import { type ReactNode, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Set } from "./sets";
 
 const setInputFormSchema = z.object({
   weights: z.string(),
@@ -44,10 +44,12 @@ export default function SetSlider({
     }),
     resolver: zodResolver(setInputFormSchema),
   });
-  const [open, setOpen] = useState(false);
 
-  const { mutate, isLoading: isMutationLoading } =
-    api.workout.setSet.useMutation();
+  const {
+    mutate,
+    isLoading: isMutationLoading,
+    variables: setVariables,
+  } = api.workout.setSet.useMutation();
 
   const [weightMetric, setWeightMetric] = useState<"kg" | "lb">("lb");
 
@@ -78,7 +80,6 @@ export default function SetSlider({
         onSuccess: () => {
           form.reset();
           toast("Workout saved");
-          setOpen(false);
           utils.workout.getSets.invalidate({ workoutId }).catch(console.error);
         },
         onError: (error) => {
@@ -89,17 +90,12 @@ export default function SetSlider({
   };
 
   return (
-    <Dialog open={open}>
+    <Dialog>
       <div className="flex gap-4 overflow-x-scroll">
         {children}
-        {isMutationLoading ? (
-          <Skeleton className="center grid h-24 w-24 items-center gap-1 rounded-lg border p-2" />
-        ) : null}
+        {isMutationLoading ? <Set set={setVariables} /> : null}
         <DialogTrigger asChild>
-          <Button
-            className="h-24 w-24 shrink-0"
-            onClick={() => setOpen((prev) => !prev)}
-          >
+          <Button className="h-24 w-24 shrink-0">
             <PlusIcon />
           </Button>
         </DialogTrigger>

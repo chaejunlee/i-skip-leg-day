@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@/trpc/react";
 import { z } from "zod";
-import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -72,22 +71,7 @@ export function WorkoutForm({
   const { mutate, isLoading: isMutationLoading } =
     api.workout.setWorkout.useMutation();
 
-  const [weightMetric, setWeightMetric] = useState<"kg" | "lb">("lb");
   const router = useRouter();
-
-  useEffect(() => {
-    if (weightMetric === "kg") {
-      form.setValue(
-        "weight",
-        String((parseFloat(form.watch("weight")) / 2.20462).toFixed(2)),
-      );
-    } else {
-      form.setValue(
-        "weight",
-        String((parseFloat(form.watch("weight")) * 2.20462).toFixed(2)),
-      );
-    }
-  }, [weightMetric]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -99,7 +83,6 @@ export function WorkoutForm({
 
   const splitId = dayObject.day.splitId;
   const bodies = data.bodies;
-  const trains = data.trains;
   const exercises = data.exercises;
 
   function onSubmit(data: WorkoutInputFormSchema) {
@@ -129,7 +112,7 @@ export function WorkoutForm({
         onSuccess: () => {
           form.reset();
           toast("Workout saved");
-          router.push("/");
+          router.push(`/workout/${dayObject.day.id}/sets`);
         },
         onError: (error) => {
           toast(error.message);
@@ -156,14 +139,14 @@ export function WorkoutForm({
           control={form.control}
           name="bodyId"
           render={({ field }) => {
-            const matchingTrains = trains.filter(
-              (train) => train.splitId === splitId,
+            const matchingExercise = exercises.filter(
+              (exercise) => exercise.splitId === splitId,
             );
 
             const filteredBodies = splitId
               ? bodies.filter((body) => {
-                  return matchingTrains.some(
-                    (train) => train.bodyId === body.id,
+                  return matchingExercise.some(
+                    (exercise) => exercise.bodyId === body.id,
                   );
                 })
               : bodies;
@@ -283,41 +266,6 @@ export function WorkoutForm({
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <FormMessage />
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={form.control}
-          name="weight"
-          render={({ field }) => {
-            return (
-              <FormItem className="flex flex-col">
-                <FormLabel>Weight</FormLabel>
-                <div className="flex gap-4">
-                  <Input
-                    type="number"
-                    {...field}
-                    onBlur={(e) => {
-                      if (e.target.value === "") {
-                        field.onChange(Number(0));
-                      } else {
-                        field.onChange(parseFloat(e.target.value).toFixed(2));
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    type="button"
-                    className="ml-auto w-14"
-                    onClick={() => {
-                      setWeightMetric((prev) => (prev === "kg" ? "lb" : "kg"));
-                    }}
-                  >
-                    {weightMetric}
-                  </Button>
-                </div>
                 <FormMessage />
               </FormItem>
             );

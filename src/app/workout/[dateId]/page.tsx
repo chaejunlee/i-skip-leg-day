@@ -8,6 +8,10 @@ export default async function Workout({
 }: {
   params: { dateId: string };
 }) {
+  if (!Number(params.dateId)) {
+    redirect("/");
+  }
+
   const session = await getServerAuthSession();
 
   if (!session || !session.user) {

@@ -35,7 +35,7 @@ export default async function DailyWorkout({
   }
 
   return (
-    <div className="container mt-6 flex flex-grow flex-col gap-6">
+    <div className="mt-6 flex flex-grow flex-col gap-6">
       <div>
         <Badge className="mb-1">{dateDetail.split}</Badge>
         <H1>{dateDetail.date}</H1>

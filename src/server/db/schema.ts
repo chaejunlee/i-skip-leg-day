@@ -126,18 +126,6 @@ export const bodies = mysqlTable("body", {
 
 export const bodiesRelations = relations(bodies, ({ many }) => ({
   exercises: many(exercises),
-  train: many(trains),
-}));
-
-export const trains = mysqlTable("train", {
-  id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
-  splitId: bigint("splitId", { mode: "number" }),
-  bodyId: bigint("bodyId", { mode: "number" }),
-});
-
-export const trainsRelations = relations(trains, ({ one }) => ({
-  split: one(splits, { fields: [trains.splitId], references: [splits.id] }),
-  body: one(bodies, { fields: [trains.bodyId], references: [bodies.id] }),
 }));
 
 export const splits = mysqlTable("split", {
@@ -151,7 +139,6 @@ export const splitsRelations = relations(splits, ({ one, many }) => ({
     fields: [splits.programId],
     references: [programs.id],
   }),
-  trains: many(trains),
   days: many(days),
 }));
 
