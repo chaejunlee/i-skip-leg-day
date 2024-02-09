@@ -1,6 +1,18 @@
 import Link from "next/link";
 import { getServerAuthSession } from "@/server/auth";
 import { Button } from "@/components/ui/button";
+import { db } from "@/server/db";
+import {
+  bodies,
+  days,
+  exercises,
+  splits,
+  trains,
+  workouts,
+} from "@/server/db/schema";
+import { desc, eq } from "drizzle-orm";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function Home() {
   const session = await getServerAuthSession();
@@ -9,10 +21,57 @@ export default async function Home() {
     return <JoinNow />;
   }
 
+  const list = await db
+    .select()
+    .from(workouts)
+    .innerJoin(days, eq(days.id, workouts.dateId))
+    .innerJoin(exercises, eq(workouts.exerciseId, exercises.id))
+    .innerJoin(trains, eq(workouts.trainId, trains.id))
+    .innerJoin(bodies, eq(exercises.bodyId, bodies.id))
+    .innerJoin(splits, eq(trains.splitId, splits.id))
+    .where(eq(days.userId, session.user.id))
+    .orderBy(desc(days.date));
+
+  const daysMap = list.reduce(
+    (acc, day) => {
+      if (!day.day.date) return acc;
+      const date = day.day.date.toISOString();
+      if (!acc[date] || typeof acc[date] === "undefined") {
+        acc[date] = [day];
+      } else {
+        acc[date]?.push(day);
+      }
+      return acc;
+    },
+    {} as Record<string, typeof list>,
+  );
+
   return (
-    <main className="flex min-h-screen flex-col">
-      <h1 className="px-4 py-4 text-2xl">Workout Log</h1>
-      <div className="flex-grow px-4">
+    <main className="container flex min-h-screen flex-col">
+      <h1 className="py-4 text-2xl">Workout Log</h1>
+      <div className="flex flex-col gap-6">
+        {Object.entries(daysMap).map(
+          ([date, workouts]: [string, typeof list]) => {
+            const dateId = workouts[0]?.day.id;
+            if (!dateId) return null;
+            return (
+              <Link
+                href={`workout/${encodeURI(session.user.id)}/${String(dateId)}`}
+              >
+                <Card className="transition-colors hover:bg-muted">
+                  <CardHeader>
+                    <div>
+                      <Badge>{workouts[0]?.split.name}</Badge>
+                    </div>
+                    <CardTitle>{date}</CardTitle>
+                  </CardHeader>
+                </Card>
+              </Link>
+            );
+          },
+        )}
+      </div>
+      <div className="flex-grow pt-4">
         <NewWorkoutSession />
       </div>
     </main>

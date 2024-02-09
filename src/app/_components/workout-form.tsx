@@ -34,98 +34,105 @@ import { format } from "date-fns";
 import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { api } from "@/trpc/react";
+import { z } from "zod";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 
-const SPLITS_MAP = {
-  "push-pull": ["➡️ Push", "⬅️ Pull", "⏺️ Other"],
-  upper: ["⬆️ Upper"],
-} as const;
-
-type Split = keyof typeof SPLITS_MAP;
-type SplitOption = (typeof SPLITS_MAP)[Split][number];
-
-const config: {
-  split: Split;
-} = {
-  split: "push-pull",
-} as const;
-
-function getPreviousSplitOption() {
-  return getLocalStorage("workout-split-option");
-}
-
-export function getLocalStorage(key: string) {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage.getItem(key);
-}
-
-export function setLocalStorage(key: string, value: string) {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage.setItem(key, value);
-}
-
-function getSplitsOption(): SplitOption {
-  const previousSplitOption = getPreviousSplitOption();
-
-  const splits = SPLITS_MAP[config.split];
-
-  for (const type of splits) {
-    if (type === previousSplitOption) {
-      return type;
-    }
-  }
-
-  return splits[0];
-}
-
-const BODYPART = [
-  "Chest",
-  "Shoulders",
-  "Triceps",
-  "Back",
-  "Biceps",
-  "Abs",
-] as const;
-
-const SPLITS_BODY_PART_MAP = {
-  "➡️ Push": ["Chest", "Shoulders", "Triceps"],
-  "⬅️ Pull": ["Back", "Biceps"],
-  "⏺️ Other": ["Abs"],
-  "⬆️ Upper": ["Chest", "Shoulders", "Triceps", "Back", "Biceps"],
-} as const;
-
-const schema = z.object({
-  date: z.date().default(() => new Date()),
-  split: z.enum(["➡️ Push", "⬅️ Pull", "⏺️ Other", "⬆️ Upper"]),
-  bodyPart: z.enum(BODYPART).nullable(),
+export const workoutInputFormSchema = z.object({
+  date: z.date(),
+  splitId: z.number().optional(),
+  bodyId: z.number().optional(),
+  exerciseId: z.number().optional(),
+  rpe: z.number(),
+  weight: z.number(),
 });
-
-type FormSchema = z.infer<typeof schema>;
+export type WorkoutInputFormSchema = z.infer<typeof workoutInputFormSchema>;
 
 export function WorkoutForm() {
-  const form = useForm<FormSchema>({
-    defaultValues: schema.parse({
+  const form = useForm<WorkoutInputFormSchema>({
+    defaultValues: workoutInputFormSchema.parse({
       date: new Date(),
-      split: getSplitsOption(),
-      bodyPart: null,
+      weight: 0,
+      rpe: 8,
     }),
-    resolver: zodResolver(schema),
+    resolver: zodResolver(workoutInputFormSchema),
   });
-  const split = form.watch("split");
 
-  const splits = SPLITS_MAP[config.split];
-  const bodyParts = SPLITS_BODY_PART_MAP[split];
+  const { data, isLoading, error } = api.workout.getWorkoutOptions.useQuery();
+  const { mutate, isLoading: isMutationLoading } =
+    api.workout.setWorkout.useMutation();
 
-  function onSubmit(data: FormSchema) {
-    console.log(data);
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="mt-2 rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+  const [weightMetric, setWeightMetric] = useState<"kg" | "lb">("lb");
+  const router = useRouter();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error ?? !data) {
+    return <div>Error loading workout options</div>;
+  }
+
+  const splits = data.splits;
+  const bodies = data.bodies;
+  const trains = data.trains;
+  const exercises = data.exercises;
+
+  function onSubmit(data: WorkoutInputFormSchema) {
+    if (!data.splitId || typeof data.splitId === "undefined") {
+      form.setError("splitId", {
+        message: "Please select a split",
+      });
+      form.setFocus("splitId");
+      return toast("Please select a split");
+    }
+    if (!data.bodyId || typeof data.bodyId === "undefined") {
+      form.setError("bodyId", {
+        message: "Please select a body part",
+      });
+      form.setFocus("bodyId");
+      return toast("Please select a body");
+    }
+    if (!data.exerciseId || typeof data.exerciseId === "undefined") {
+      form.setError("exerciseId", {
+        message: "Please select an exercise",
+      });
+      form.setFocus("exerciseId");
+      return toast("Please select an exercise");
+    }
+
+    const trainId = trains.find((train) => train.splitId === data.splitId)?.id;
+
+    if (!trainId) {
+      form.setError("splitId", {
+        message: "No train found for this split",
+      });
+      form.setFocus("splitId");
+      return toast("No train found for this split");
+    }
+
+    mutate(
+      {
+        date: data.date,
+        trainId,
+        exerciseId: data.exerciseId,
+        rpe: data.rpe,
+        weight: data.weight,
+      },
+      {
+        onSuccess: () => {
+          form.reset();
+          toast("Workout saved");
+          router.push("/");
+        },
+        onError: (error) => {
+          toast(error.message);
+        },
+      },
+    );
   }
 
   return (
@@ -134,7 +141,7 @@ export function WorkoutForm() {
         onSubmit={form.handleSubmit((data) => {
           onSubmit(data);
         })}
-        className="flex flex-grow flex-col gap-4"
+        className="flex flex-grow flex-col gap-6"
       >
         <FormField
           control={form.control}
@@ -176,14 +183,13 @@ export function WorkoutForm() {
         />
         <FormField
           control={form.control}
-          name="split"
+          name="splitId"
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel htmlFor="workout-split">Split</FormLabel>
               <Select
                 onValueChange={(e) => {
-                  field.onChange(e);
-                  form.setValue("bodyPart", null);
+                  field.onChange(splits.find((split) => split.name === e)?.id);
                 }}
               >
                 <FormControl>
@@ -192,9 +198,13 @@ export function WorkoutForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {splits.map((type) => (
-                    <SelectItem className="w-full" key={type} value={type}>
-                      {type}
+                  {splits.map((split) => (
+                    <SelectItem
+                      className="w-full"
+                      key={split.id}
+                      value={split.name}
+                    >
+                      {split.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -205,61 +215,215 @@ export function WorkoutForm() {
         />
         <FormField
           control={form.control}
-          name="bodyPart"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Body Part</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className={cn(
-                        "justify-between font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value
-                        ? bodyParts.find((body) => body === field.value)
-                        : "Select body part"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search body part..." />
-                    <CommandEmpty>No body part found.</CommandEmpty>
-                    <CommandGroup>
-                      {bodyParts.map((bodyPart) => (
-                        <CommandItem
-                          value={bodyPart}
-                          key={bodyPart}
-                          onSelect={() => {
-                            form.setValue("bodyPart", bodyPart);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              bodyPart === field.value
-                                ? "opacity-100"
-                                : "opacity-0",
-                            )}
-                          />
-                          {bodyPart}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
+          name="bodyId"
+          render={({ field }) => {
+            const splitId = form.watch("splitId");
+
+            const matchingTrains = trains.filter(
+              (train) => train.splitId === splitId,
+            );
+
+            const filteredBodies = splitId
+              ? bodies.filter((body) => {
+                  return matchingTrains.some(
+                    (train) => train.bodyId === body.id,
+                  );
+                })
+              : bodies;
+
+            const body = bodies.find((body) => body.id === field.value)?.name;
+
+            return (
+              <FormItem className="flex flex-col">
+                <FormLabel>Body</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "justify-between font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {body ? body : "Select body part"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search body part..." />
+                      <CommandEmpty>No body part found.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredBodies.map((body) => (
+                          <CommandItem
+                            key={body.id}
+                            value={body.name}
+                            onSelect={() => {
+                              form.setValue("bodyId", body.id);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                body.id === field.value
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                            />
+                            {body.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
-        <Button type="submit">Submit</Button>
+        <FormField
+          control={form.control}
+          name="exerciseId"
+          render={({ field }) => {
+            const bodyId = form.watch("bodyId");
+
+            const filteredExercises = exercises.filter((exercise) => {
+              return exercise.bodyId === bodyId;
+            });
+
+            const exercise = exercises.find(
+              (exercise) => exercise.id === field.value,
+            )?.name;
+
+            return (
+              <FormItem className="flex flex-col">
+                <FormLabel>Exercise</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "justify-between font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {exercise ? exercise : "Select exercise"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search exercise..." />
+                      <CommandEmpty>No exercise found.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredExercises.map((exercise) => (
+                          <CommandItem
+                            key={exercise.id}
+                            value={exercise.name}
+                            onSelect={() => {
+                              form.setValue("exerciseId", exercise.id);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                exercise.id === field.value
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                            />
+                            {exercise.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+        <FormField
+          control={form.control}
+          name="weight"
+          render={({ field }) => {
+            return (
+              <FormItem className="flex flex-col">
+                <FormLabel>Weight</FormLabel>
+                <div className="flex gap-4">
+                  <Input
+                    type="number"
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(parseFloat(e.target.value));
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value === "") {
+                        field.onChange(Number(0));
+                      } else {
+                        field.onChange(parseFloat(e.target.value).toFixed(2));
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    type="button"
+                    className="ml-auto w-14"
+                    onClick={() => {
+                      setWeightMetric((prev) => {
+                        if (prev === "kg") {
+                          if (field.value)
+                            field.onChange(
+                              parseFloat((field.value * 2.20462).toFixed(2)),
+                            );
+                          return "lb";
+                        }
+                        if (field.value)
+                          field.onChange(
+                            parseFloat((field.value / 2.20462).toFixed(2)),
+                          );
+                        return "kg";
+                      });
+                    }}
+                  >
+                    {weightMetric}
+                  </Button>
+                </div>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+        <FormField
+          control={form.control}
+          name="rpe"
+          render={({ field }) => {
+            return (
+              <FormItem className="flex flex-col">
+                <FormLabel>RPE</FormLabel>
+                <Input
+                  type="number"
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(parseInt(e.target.value));
+                  }}
+                />
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+        <Button type="submit">
+          {isMutationLoading ? "Loading..." : "Save"}
+        </Button>
       </form>
     </Form>
   );
