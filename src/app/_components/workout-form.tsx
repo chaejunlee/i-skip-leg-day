@@ -312,12 +312,7 @@ export function WorkoutForm({
                     type="button"
                     className="ml-auto w-14"
                     onClick={() => {
-                      setWeightMetric((prev) => {
-                        if (prev === "kg") {
-                          return "lb";
-                        }
-                        return "kg";
-                      });
+                      setWeightMetric((prev) => (prev === "kg" ? "lb" : "kg"));
                     }}
                   >
                     {weightMetric}
