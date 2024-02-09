@@ -26,9 +26,9 @@ export default async function Home() {
     .from(workouts)
     .innerJoin(days, eq(days.id, workouts.dateId))
     .innerJoin(exercises, eq(workouts.exerciseId, exercises.id))
-    .innerJoin(trains, eq(workouts.trainId, trains.id))
     .innerJoin(bodies, eq(exercises.bodyId, bodies.id))
-    .innerJoin(splits, eq(trains.splitId, splits.id))
+    .innerJoin(splits, eq(days.splitId, splits.id))
+    .innerJoin(trains, eq(splits.id, trains.splitId))
     .where(eq(days.userId, session.user.id))
     .orderBy(desc(days.date));
 
