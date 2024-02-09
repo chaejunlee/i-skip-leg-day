@@ -1,3 +1,4 @@
+import H1 from "@/components/typography/H1";
 import { getServerAuthSession } from "@/server/auth";
 import { db } from "@/server/db";
 import { days, workouts } from "@/server/db/schema";
@@ -8,11 +9,11 @@ import { redirect } from "next/navigation";
 export default async function DailyWorkout({
   params,
 }: {
-  params: { userId: string; dateId: number };
+  params: { dateId: number };
 }) {
   const session = await getServerAuthSession();
 
-  if (!session || !session.user || session.user.id !== params.userId) {
+  if (!session || !session.user) {
     redirect("/");
   }
 
@@ -34,13 +35,14 @@ export default async function DailyWorkout({
 
   const formattedDate = intlFormat(dateString, {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
+    weekday: "short",
   });
 
   return (
-    <div className="container flex flex-grow flex-col">
-      <h1 className="mt-6 text-2xl font-bold">{formattedDate}</h1>
+    <div className="container mt-6 flex flex-grow flex-col">
+      <H1>{formattedDate}</H1>
     </div>
   );
 }

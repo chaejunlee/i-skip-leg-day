@@ -13,6 +13,7 @@ import {
 import { desc, eq } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { intlFormat } from "date-fns";
 
 export default async function Home() {
   const session = await getServerAuthSession();
@@ -35,7 +36,12 @@ export default async function Home() {
   const daysMap = list.reduce(
     (acc, day) => {
       if (!day.day.date) return acc;
-      const date = day.day.date.toISOString();
+      const date = intlFormat(day.day.date, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        weekday: "short",
+      });
       if (!acc[date] || typeof acc[date] === "undefined") {
         acc[date] = [day];
       } else {
@@ -55,9 +61,7 @@ export default async function Home() {
             const dateId = workouts[0]?.day.id;
             if (!dateId) return null;
             return (
-              <Link
-                href={`workout/${encodeURI(session.user.id)}/${String(dateId)}`}
-              >
+              <Link href={`workout/${String(dateId)}/sets/`}>
                 <Card className="transition-colors hover:bg-muted">
                   <CardHeader>
                     <div>
