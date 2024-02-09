@@ -3,7 +3,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
-import { days, splits, workouts } from "@/server/db/schema";
+import { days, sets, splits, workouts } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -59,11 +59,47 @@ export const workoutRouter = createTRPCRouter({
         });
       } catch (error) {
         console.error(error);
-        return {
-          success: false,
-          message: "Error saving workout",
-        };
+        throw Error("Error saving workout");
       }
       return { success: true, message: "Workout saved" };
+    }),
+  getSets: protectedProcedure
+    .input(
+      z.object({
+        workoutId: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const setsQuery = await ctx.db
+        .select()
+        .from(sets)
+        .where(eq(sets.workoutId, input.workoutId));
+
+      if (!setsQuery) {
+        return null;
+      }
+
+      return setsQuery;
+    }),
+  setSet: protectedProcedure
+    .input(
+      z.object({
+        workoutId: z.number(),
+        reps: z.number(),
+        weights: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await ctx.db.insert(sets).values({
+          workoutId: input.workoutId,
+          reps: input.reps,
+          weights: input.weights,
+        });
+        return { success: true, message: "Set saved" };
+      } catch (error) {
+        console.error(error);
+        throw Error("Error saving set");
+      }
     }),
 });
