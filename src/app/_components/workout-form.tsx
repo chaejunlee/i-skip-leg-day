@@ -39,6 +39,7 @@ import { api } from "@/trpc/react";
 import { z } from "zod";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 
 export const workoutInputFormSchema = z.object({
   date: z.date(),
@@ -61,13 +62,11 @@ export function WorkoutForm() {
   });
 
   const { data, isLoading, error } = api.workout.getWorkoutOptions.useQuery();
-  const {
-    mutate,
-    isLoading: isMutationLoading,
-    error: isMutationError,
-  } = api.workout.setWorkout.useMutation();
+  const { mutate, isLoading: isMutationLoading } =
+    api.workout.setWorkout.useMutation();
 
   const [weightMetric, setWeightMetric] = useState<"kg" | "lb">("lb");
+  const router = useRouter();
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -127,6 +126,7 @@ export function WorkoutForm() {
         onSuccess: () => {
           form.reset();
           toast("Workout saved");
+          router.push("/");
         },
         onError: (error) => {
           toast(error.message);
