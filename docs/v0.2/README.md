@@ -20,3 +20,7 @@
       1. let's show the previous workout's weight.
       2. let's show a graph showing the progress for last month.
    4. After the exercise is added, let's add a button to add a set of reps.
+
+## ERD
+
+![ERD](iSkipLegDay-v0.2.png)
