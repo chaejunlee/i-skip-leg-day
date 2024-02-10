@@ -7,6 +7,7 @@ import { days, splits } from "@/server/db/schema";
 import { format } from "date-fns";
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
+import { JoinNow } from "./join-now";
 
 export default async function Home() {
   const session = await getServerAuthSession();
@@ -46,25 +47,6 @@ export default async function Home() {
       <div className="flex-grow pt-4">
         <Button asChild>
           <Link href="/workout/">Add New Day</Link>
-        </Button>
-      </div>
-    </main>
-  );
-}
-
-export function JoinNow() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="mx-auto text-center text-2xl font-semibold">
-        Join iSkipLegDay™️ Today!
-      </h1>
-      <p className="mx-auto pt-4">A REAL MAN don't need a LEG 🦵 DAY.</p>
-      <p className="mx-auto">What are you doing over there?</p>
-      <div className="pt-6">
-        <Button asChild variant="outline">
-          <Link href="/api/auth/signin" className="bg-red-500 text-white">
-            Join now
-          </Link>
         </Button>
       </div>
     </main>
