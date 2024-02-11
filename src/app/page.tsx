@@ -1,18 +1,15 @@
-import Link from "next/link";
-import { getServerAuthSession } from "@/server/auth";
-import { Button } from "@/components/ui/button";
-import { db } from "@/server/db";
-import {
-  bodies,
-  days,
-  exercises,
-  splits,
-  trains,
-  workouts,
-} from "@/server/db/schema";
-import { desc, eq } from "drizzle-orm";
+import H1 from "@/components/typography/H1";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CardHeader, CardTitle } from "@/components/ui/card";
+import { getServerAuthSession } from "@/server/auth";
+import { db } from "@/server/db";
+import { days, splits } from "@/server/db/schema";
+import { format } from "date-fns";
+import { desc, eq } from "drizzle-orm";
+import Link from "next/link";
+import LinkCard from "./_components/link-card";
+import { JoinNow } from "./join-now";
 
 export default async function Home() {
   const session = await getServerAuthSession();
@@ -23,87 +20,33 @@ export default async function Home() {
 
   const list = await db
     .select()
-    .from(workouts)
-    .innerJoin(days, eq(days.id, workouts.dateId))
-    .innerJoin(exercises, eq(workouts.exerciseId, exercises.id))
-    .innerJoin(trains, eq(workouts.trainId, trains.id))
-    .innerJoin(bodies, eq(exercises.bodyId, bodies.id))
-    .innerJoin(splits, eq(trains.splitId, splits.id))
+    .from(days)
+    .innerJoin(splits, eq(splits.id, days.splitId))
     .where(eq(days.userId, session.user.id))
     .orderBy(desc(days.date));
 
-  const daysMap = list.reduce(
-    (acc, day) => {
-      if (!day.day.date) return acc;
-      const date = day.day.date.toISOString();
-      if (!acc[date] || typeof acc[date] === "undefined") {
-        acc[date] = [day];
-      } else {
-        acc[date]?.push(day);
-      }
-      return acc;
-    },
-    {} as Record<string, typeof list>,
-  );
-
   return (
-    <main className="container flex min-h-screen flex-col">
-      <h1 className="py-4 text-2xl">Workout Log</h1>
-      <div className="flex flex-col gap-6">
-        {Object.entries(daysMap).map(
-          ([date, workouts]: [string, typeof list]) => {
-            const dateId = workouts[0]?.day.id;
-            if (!dateId) return null;
-            return (
-              <Link
-                href={`workout/${encodeURI(session.user.id)}/${String(dateId)}`}
-              >
-                <Card className="transition-colors hover:bg-muted">
-                  <CardHeader>
-                    <div>
-                      <Badge>{workouts[0]?.split.name}</Badge>
-                    </div>
-                    <CardTitle>{date}</CardTitle>
-                  </CardHeader>
-                </Card>
-              </Link>
-            );
-          },
-        )}
+    <main className="container flex min-h-screen flex-col gap-6 pt-12">
+      <H1>Workout Log</H1>
+      <div className="flex grow flex-col gap-6 pb-6">
+        {list.map(({ day, split }) => {
+          const dateId = day.id;
+          if (!dateId) return null;
+          return (
+            <LinkCard key={dateId} href={`workout/${String(dateId)}/`}>
+              <CardHeader>
+                <div className="pb-1">
+                  <Badge>{split.name}</Badge>
+                </div>
+                <CardTitle>{format(day.date!, "PPP")}</CardTitle>
+              </CardHeader>
+            </LinkCard>
+          );
+        })}
       </div>
-      <div className="flex-grow pt-4">
-        <NewWorkoutSession />
-      </div>
-    </main>
-  );
-}
-
-function NewWorkoutSession() {
-  return (
-    <Button asChild variant="outline">
-      <Link
-        href="/workout"
-        className="block w-full rounded border py-2 text-center"
-      >
-        New Workout
-      </Link>
-    </Button>
-  );
-}
-
-function JoinNow() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="mx-auto text-center text-2xl font-semibold">
-        Join iSkipLegDay™️ Today!
-      </h1>
-      <p className="mx-auto pt-4">A REAL MAN don't need a LEG 🦵 DAY.</p>
-      <p className="mx-auto">What are you doing over there?</p>
-      <div className="pt-6">
-        <Button asChild variant="outline">
-          <Link href="/api/auth/signin" className="bg-red-500 text-white">
-            Join now
-          </Link>
+      <div className="sticky bottom-6 w-full">
+        <Button className="w-full" asChild>
+          <Link href="/workout/">Add New Day</Link>
         </Button>
       </div>
     </main>

@@ -24,6 +24,7 @@ export const days = mysqlTable("day", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
   date: datetime("date").default(sql`CURRENT_TIMESTAMP`),
   userId: varchar("userId", { length: 255 }),
+  splitId: bigint("splitId", { mode: "number" }),
 });
 
 export const daysRelations = relations(days, ({ one, many }) => ({
@@ -31,6 +32,7 @@ export const daysRelations = relations(days, ({ one, many }) => ({
   weights: many(weights),
   workouts: many(workouts),
   cardios: many(cardios),
+  splits: one(splits, { fields: [days.splitId], references: [splits.id] }),
 }));
 
 export const weights = mysqlTable("weight", {
@@ -75,7 +77,6 @@ export const cardioRelations = relations(cardios, ({ one }) => ({
 export const workouts = mysqlTable("workout", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
   dateId: bigint("dateId", { mode: "number" }),
-  trainId: bigint("trainId", { mode: "number" }),
   exerciseId: bigint("exerciseId", { mode: "number" }),
   weight: bigint("weight", { mode: "number" }).notNull(),
   rpe: bigint("rpe", { mode: "number" }).notNull(),
@@ -84,7 +85,6 @@ export const workouts = mysqlTable("workout", {
 
 export const workoutsRelations = relations(workouts, ({ one, many }) => ({
   day: one(days, { fields: [workouts.dateId], references: [days.id] }),
-  train: one(trains, { fields: [workouts.trainId], references: [trains.id] }),
   exercise: one(exercises, {
     fields: [workouts.exerciseId],
     references: [exercises.id],
@@ -95,8 +95,8 @@ export const workoutsRelations = relations(workouts, ({ one, many }) => ({
 export const sets = mysqlTable("set", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
   workoutId: bigint("workoutId", { mode: "number" }),
-  sets: bigint("sets", { mode: "number" }).notNull(),
   reps: bigint("reps", { mode: "number" }).notNull(),
+  weights: bigint("weights", { mode: "number" }).notNull(),
 });
 
 export const setsRelations = relations(sets, ({ one }) => ({
@@ -110,11 +110,13 @@ export const exercises = mysqlTable("exercise", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
   bodyId: bigint("bodyId", { mode: "number" }),
   name: varchar("name", { length: 255 }).notNull(),
+  splitId: bigint("splitId", { mode: "number" }),
 });
 
 export const exercisesRelations = relations(exercises, ({ one, many }) => ({
   body: one(bodies, { fields: [exercises.bodyId], references: [bodies.id] }),
   workouts: many(workouts),
+  splits: one(splits, { fields: [exercises.splitId], references: [splits.id] }),
 }));
 
 export const bodies = mysqlTable("body", {
@@ -124,19 +126,6 @@ export const bodies = mysqlTable("body", {
 
 export const bodiesRelations = relations(bodies, ({ many }) => ({
   exercises: many(exercises),
-  train: many(trains),
-}));
-
-export const trains = mysqlTable("train", {
-  id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
-  splitId: bigint("splitId", { mode: "number" }),
-  bodyId: bigint("bodyId", { mode: "number" }),
-});
-
-export const trainsRelations = relations(trains, ({ one, many }) => ({
-  split: one(splits, { fields: [trains.splitId], references: [splits.id] }),
-  body: one(bodies, { fields: [trains.bodyId], references: [bodies.id] }),
-  workouts: many(workouts),
 }));
 
 export const splits = mysqlTable("split", {
@@ -150,7 +139,7 @@ export const splitsRelations = relations(splits, ({ one, many }) => ({
     fields: [splits.programId],
     references: [programs.id],
   }),
-  trains: many(trains),
+  days: many(days),
 }));
 
 export const programs = mysqlTable("program", {
