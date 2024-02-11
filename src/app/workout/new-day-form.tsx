@@ -61,7 +61,7 @@ export default function NewDayForm() {
         message: "Please select a date",
       });
       form.setFocus("date");
-      return toast("Please select a date");
+      return toast.warning("Please select a date");
     }
 
     if (!data.splitId || typeof data.splitId === "undefined") {
@@ -69,7 +69,7 @@ export default function NewDayForm() {
         message: "Please select a split",
       });
       form.setFocus("splitId");
-      return toast("Please select a split");
+      return toast.warning("Please select a split");
     }
 
     const alreadyExists = days?.find((row) => {
@@ -77,7 +77,7 @@ export default function NewDayForm() {
     });
 
     if (alreadyExists) {
-      return toast("Day already exists");
+      return toast.warning("Day already exists");
     }
 
     mutate(
@@ -87,11 +87,11 @@ export default function NewDayForm() {
       },
       {
         onSuccess: ({ dateId }) => {
-          toast("New day saved");
-          router.push(`/workout/${dateId}`);
+          toast.success("New day saved");
+          router.push(`/workout/${dateId}/`);
         },
         onError: (error) => {
-          toast(error.message);
+          toast.warning(error.message);
         },
       },
     );
@@ -108,7 +108,7 @@ export default function NewDayForm() {
         <div className="mt-12">
           <H1>New Day</H1>
         </div>
-        <div className="flex flex-grow flex-col gap-6">
+        <div className="flex flex-grow flex-col gap-6 pb-6">
           <FormField
             control={form.control}
             name="date"

@@ -79,11 +79,11 @@ export default function SetSlider({
       {
         onSuccess: () => {
           form.reset();
-          toast("Workout saved");
+          toast.success("Workout saved");
           utils.workout.getSets.invalidate({ workoutId }).catch(console.error);
         },
         onError: (error) => {
-          toast(error.message);
+          toast.error(error.message);
         },
       },
     );

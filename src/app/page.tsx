@@ -28,12 +28,12 @@ export default async function Home() {
   return (
     <main className="container flex min-h-screen flex-col gap-6 pt-12">
       <H1>Workout Log</H1>
-      <div className="flex grow flex-col gap-6">
+      <div className="flex grow flex-col gap-6 pb-6">
         {list.map(({ day, split }) => {
           const dateId = day.id;
           if (!dateId) return null;
           return (
-            <LinkCard key={dateId} href={`workout/${String(dateId)}/sets/`}>
+            <LinkCard key={dateId} href={`workout/${String(dateId)}/`}>
               <CardHeader>
                 <div className="pb-1">
                   <Badge>{split.name}</Badge>
@@ -44,7 +44,7 @@ export default async function Home() {
           );
         })}
       </div>
-      <div className="sticky bottom-6 w-full pt-4">
+      <div className="sticky bottom-6 w-full">
         <Button className="w-full" asChild>
           <Link href="/workout/">Add New Day</Link>
         </Button>

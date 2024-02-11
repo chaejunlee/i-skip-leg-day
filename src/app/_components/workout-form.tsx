@@ -93,14 +93,14 @@ export function WorkoutForm({
         message: "Please select a body part",
       });
       form.setFocus("bodyId");
-      return toast("Please select a body");
+      return toast.warning("Please select a body");
     }
     if (!data.exerciseId || typeof data.exerciseId === "undefined") {
       form.setError("exerciseId", {
         message: "Please select an exercise",
       });
       form.setFocus("exerciseId");
-      return toast("Please select an exercise");
+      return toast.warning("Please select an exercise");
     }
 
     mutate(
@@ -113,11 +113,11 @@ export function WorkoutForm({
       {
         onSuccess: () => {
           form.reset();
-          toast("Workout saved");
+          toast.success("Workout saved");
           router.push(`/workout/${dayObject.day.id}/sets`);
         },
         onError: (error) => {
-          toast(error.message);
+          toast.error(error.message);
         },
       },
     );
