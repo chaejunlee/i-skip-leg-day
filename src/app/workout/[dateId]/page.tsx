@@ -40,12 +40,16 @@ export default async function DailyWorkout({
         <Badge className="mb-1">{dateDetail.split}</Badge>
         <H1>{dateDetail.date}</H1>
       </div>
-      <div className="flex grow flex-col gap-6 pb-6">
+      <div className="flex flex-grow flex-col gap-6 pb-6">
         {dailyWorkoutDetail.map(({ workout, exercise, body }) => (
-          <LinkCard key={workout.id} href={``}>
+          <LinkCard
+            key={workout.id}
+            href={`/workout/${params.dateId}/${workout.id}`}
+          >
             <CardHeader>
-              <div className="pb-1">
+              <div className="flex gap-2 pb-1">
                 <Badge variant="secondary">{body.name}</Badge>
+                <Badge variant="secondary">RPE {workout.rpe}</Badge>
               </div>
               <CardTitle>{exercise.name}</CardTitle>
             </CardHeader>

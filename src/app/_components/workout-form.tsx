@@ -114,7 +114,7 @@ export function WorkoutForm({
         onSuccess: () => {
           form.reset();
           toast.success("Workout saved");
-          router.push(`/workout/${dayObject.day.id}/sets`);
+          router.push(`/workout/${dayObject.day.id}`);
         },
         onError: (error) => {
           toast.error(error.message);

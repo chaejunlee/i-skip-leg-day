@@ -35,7 +35,7 @@ export default async function Workout({
         <div className="pb-1">
           <Badge>{dayObject.split.name}</Badge>
         </div>
-        <H1>{format(new Date(), "yyyy-MM-dd")}</H1>
+        <H1>{format(dayObject.day.date!, "PPP")}</H1>
       </div>
       <WorkoutForm dayObject={dayObject} />
     </div>

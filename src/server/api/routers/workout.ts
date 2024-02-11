@@ -72,6 +72,7 @@ export const workoutRouter = createTRPCRouter({
           weight: input.weight,
           description: "",
         });
+        revalidatePath("/workout/[dateId]", "page");
       } catch (error) {
         console.error(error);
         throw Error("Error saving workout");
@@ -131,7 +132,7 @@ export const workoutRouter = createTRPCRouter({
           date: input.date,
           userId: ctx.session.user.id,
         });
-        revalidatePath("/");
+        revalidatePath("/", "page");
         return { success: true, message: "Day saved", dateId: query.insertId };
       } catch (error) {
         console.error(error);
