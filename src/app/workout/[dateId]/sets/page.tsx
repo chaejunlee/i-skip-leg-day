@@ -1,15 +1,14 @@
+import LinkCard from "@/app/_components/link-card";
 import H1 from "@/components/typography/H1";
-import H3 from "@/components/typography/H3";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerAuthSession } from "@/server/auth";
 import { db } from "@/server/db";
 import { bodies, days, exercises, splits, workouts } from "@/server/db/schema";
 import { intlFormat } from "date-fns";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import SetSlider from "./set-slider";
-import Sets from "./sets";
 
 export default async function DailyWorkout({
   params,
@@ -35,29 +34,25 @@ export default async function DailyWorkout({
   }
 
   return (
-    <div className="mt-6 flex flex-grow flex-col gap-6">
+    <div className="flex min-h-full flex-grow flex-col gap-6 pt-5">
       <div>
         <Badge className="mb-1">{dateDetail.split}</Badge>
         <H1>{dateDetail.date}</H1>
       </div>
-      <div className="flex flex-col gap-6">
+      <div className="flex grow flex-col gap-6">
         {dailyWorkoutDetail.map(({ workout, exercise, body }) => (
-          <Card key={workout.id}>
+          <LinkCard key={workout.id} href={``}>
             <CardHeader>
-              <div>
-                <Badge variant="outline">{body.name}</Badge>
+              <div className="pb-1">
+                <Badge variant="secondary">{body.name}</Badge>
               </div>
-              <H3>{exercise.name}</H3>
+              <CardTitle>{exercise.name}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                <SetSlider workoutId={workout.id}>
-                  <Sets workoutId={workout.id} />
-                </SetSlider>
-              </div>
-            </CardContent>
-          </Card>
+          </LinkCard>
         ))}
+      </div>
+      <div className="sticky bottom-6 w-full">
+        <Button className="w-full">Add Exercise</Button>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import {
 } from "@/server/api/trpc";
 import { days, sets, splits, workouts } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const workoutInputSchema = z.object({
@@ -130,6 +131,7 @@ export const workoutRouter = createTRPCRouter({
           date: input.date,
           userId: ctx.session.user.id,
         });
+        revalidatePath("/");
         return { success: true, message: "Day saved", dateId: query.insertId };
       } catch (error) {
         console.error(error);

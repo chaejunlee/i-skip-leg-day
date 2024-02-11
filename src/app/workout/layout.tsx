@@ -4,6 +4,8 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="container flex min-h-screen flex-col">{children}</main>
+    <main className="container relative flex min-h-screen flex-col">
+      {children}
+    </main>
   );
 }

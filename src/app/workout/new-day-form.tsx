@@ -1,6 +1,8 @@
 "use client";
 
+import H1 from "@/components/typography/H1";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Form,
   FormControl,
@@ -14,14 +16,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { api } from "@/trpc/react";
-import { z } from "zod";
 import {
   Select,
   SelectContent,
@@ -29,9 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import H1 from "@/components/typography/H1";
+import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 export const workoutInputFormSchema = z.object({
   date: z.date(),
@@ -103,80 +103,86 @@ export default function NewDayForm() {
         onSubmit={form.handleSubmit((data) => {
           onSubmit(data);
         })}
-        className="mt-6 flex flex-grow flex-col gap-6"
+        className="flex flex-grow flex-col gap-6"
       >
-        <H1>New Day</H1>
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
+        <div className="mt-12">
+          <H1>New Day</H1>
+        </div>
+        <div className="flex flex-grow flex-col gap-6">
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "text-left font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="splitId"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel htmlFor="workout-split">Split</FormLabel>
+                <Select
+                  onValueChange={(e) => {
+                    field.onChange(
+                      splits?.find((split) => split.name === e)?.id,
+                    );
+                  }}
+                >
                   <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
+                    <SelectTrigger className="px-4">
+                      <SelectValue placeholder="Select today's split" />
+                    </SelectTrigger>
                   </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="splitId"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel htmlFor="workout-split">Split</FormLabel>
-              <Select
-                onValueChange={(e) => {
-                  field.onChange(splits?.find((split) => split.name === e)?.id);
-                }}
-              >
-                <FormControl>
-                  <SelectTrigger className="px-4">
-                    <SelectValue placeholder="Select today's split" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {splits?.map((split) => (
-                    <SelectItem
-                      className="w-full"
-                      key={split.id}
-                      value={split.name}
-                    >
-                      {split.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">
+                  <SelectContent>
+                    {splits?.map((split) => (
+                      <SelectItem
+                        className="w-full"
+                        key={split.id}
+                        value={split.name}
+                      >
+                        {split.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <Button type="submit" className="sticky bottom-6 w-full">
           {isMutationLoading ? "Loading..." : "Save"}
         </Button>
       </form>
