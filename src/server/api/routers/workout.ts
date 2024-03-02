@@ -4,7 +4,7 @@ import {
   publicProcedure,
 } from "@/server/api/trpc";
 import { days, sets, splits, workouts } from "@/server/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -103,6 +103,7 @@ export const workoutRouter = createTRPCRouter({
         workoutId: z.number(),
         reps: z.number(),
         weights: z.number(),
+        metric: z.enum(["lb", "kg"]),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -111,6 +112,7 @@ export const workoutRouter = createTRPCRouter({
           workoutId: input.workoutId,
           reps: input.reps,
           weights: input.weights,
+          metric: input.metric,
         });
         return { success: true, message: "Set saved" };
       } catch (error) {
@@ -137,6 +139,48 @@ export const workoutRouter = createTRPCRouter({
       } catch (error) {
         console.error(error);
         throw Error("Error saving day");
+      }
+    }),
+  getLastestSet: protectedProcedure
+    .input(
+      z.object({
+        workoutId: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const queryResult = await ctx.db
+        .select({
+          id: workouts.exerciseId,
+        })
+        .from(workouts)
+        .where(eq(workouts.id, input.workoutId));
+
+      if (!queryResult ?? !queryResult[0] ?? !queryResult[0].id) {
+        return null;
+      }
+
+      const exerciseId = queryResult[0].id;
+      const lastSetQuery = await ctx.db
+        .select()
+        .from(workouts)
+        .innerJoin(days, eq(workouts.dateId, days.id))
+        .innerJoin(sets, eq(workouts.id, sets.workoutId))
+        .where(
+          and(
+            eq(days.userId, ctx.session.user.id),
+            eq(workouts.exerciseId, exerciseId),
+          ),
+        )
+        .orderBy(desc(sets.id))
+        .limit(1);
+
+      if (!lastSetQuery ?? !lastSetQuery[0]) {
+        return null;
+      }
+
+      const lastSet = lastSetQuery[0];
+      if (lastSet?.set?.reps && lastSet.set.weights && lastSet.set.metric) {
+        return lastSet.set;
       }
     }),
 });

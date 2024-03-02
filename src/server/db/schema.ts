@@ -94,9 +94,12 @@ export const workoutsRelations = relations(workouts, ({ one, many }) => ({
 
 export const sets = mysqlTable("set", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
-  workoutId: bigint("workoutId", { mode: "number" }),
+  workoutId: bigint("workoutId", { mode: "number" }).notNull(),
   reps: bigint("reps", { mode: "number" }).notNull(),
   weights: bigint("weights", { mode: "number" }).notNull(),
+  metric: text("metric", { enum: ["lb", "kg"] })
+    .default("lb")
+    .notNull(),
 });
 
 export const setsRelations = relations(sets, ({ one }) => ({
