@@ -25,30 +25,40 @@ import { z } from "zod";
 const setInputFormSchema = z.object({
   weights: z.string(),
   reps: z.string(),
+  metric: z.enum(["kg", "lb"]),
 });
 type SetInputFormSchema = z.infer<typeof setInputFormSchema>;
+
+export function convertMetric(value: string, metric: "kg" | "lb") {
+  if (metric === "kg") {
+    return (parseFloat(value) / 2.20462).toFixed(2);
+  } else {
+    return (parseFloat(value) * 2.20462).toFixed(2);
+  }
+}
 
 export default function AddSet({
   workoutId,
   mutate,
 }: {
   workoutId: number;
-  mutate: (
-    {
-      workoutId,
-      reps,
-      weights,
-    }: { workoutId: number; reps: number; weights: number },
-    {
-      onSuccess,
-      onError,
-    }: { onSuccess: () => void; onError: (error: { message: string }) => void },
-  ) => void;
+  mutate: ({
+    workoutId,
+    reps,
+    weights,
+    metric,
+  }: {
+    workoutId: number;
+    reps: number;
+    weights: number;
+    metric: "lb" | "kg";
+  }) => void;
 }) {
   const form = useForm<SetInputFormSchema>({
     defaultValues: setInputFormSchema.parse({
       weights: "0",
       reps: "0",
+      metric: "lb",
     }),
     resolver: zodResolver(setInputFormSchema),
   });
@@ -58,37 +68,19 @@ export default function AddSet({
   const utils = api.useUtils();
 
   useEffect(() => {
-    if (weightMetric === "kg") {
-      form.setValue(
-        "weights",
-        String((parseFloat(form.watch("weights")) / 2.20462).toFixed(2)),
-      );
-    } else {
-      form.setValue(
-        "weights",
-        String((parseFloat(form.watch("weights")) * 2.20462).toFixed(2)),
-      );
-    }
+    form.setValue(
+      "weights",
+      convertMetric(form.watch("weights"), weightMetric),
+    );
   }, [weightMetric]);
 
   const onSubmit = (data: SetInputFormSchema) => {
-    mutate(
-      {
-        workoutId,
-        reps: parseInt(data.reps),
-        weights: parseFloat(data.weights),
-      },
-      {
-        onSuccess: () => {
-          form.reset();
-          toast.success("Workout saved");
-          utils.workout.getSets.invalidate({ workoutId }).catch(console.error);
-        },
-        onError: (error) => {
-          toast.error(error.message);
-        },
-      },
-    );
+    mutate({
+      workoutId,
+      reps: parseInt(data.reps),
+      weights: parseFloat(data.weights),
+      metric: data.metric,
+    });
   };
 
   return (

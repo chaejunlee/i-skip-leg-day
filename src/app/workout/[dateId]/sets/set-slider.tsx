@@ -75,6 +75,7 @@ export default function SetSlider({
         workoutId,
         reps: parseInt(data.reps),
         weights: parseFloat(data.weights),
+        metric: weightMetric,
       },
       {
         onSuccess: () => {
