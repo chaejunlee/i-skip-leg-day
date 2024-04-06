@@ -121,17 +121,21 @@ export function Sets({
         </Table>
       </div>
       <div className="sticky bottom-6 w-full">
-        <Button
-          className="w-full"
-          disabled={!isLastSetAvailable}
-          onClick={() => {
-            if (isLastSetAvailable && lastSet) {
-              mutateSet(lastSet);
-            }
-          }}
-        >
-          Duplicate last set
-        </Button>
+        {isLastSetAvailable && lastSet ? (
+          <Button
+            className="w-full"
+            disabled={!isLastSetAvailable}
+            onClick={() => {
+              if (isLastSetAvailable && lastSet) {
+                mutateSet(lastSet);
+              }
+            }}
+          >
+            Duplicate last set
+          </Button>
+        ) : (
+          <AddSet workoutId={workoutId} mutate={mutateSet} />
+        )}
       </div>
     </>
   );
