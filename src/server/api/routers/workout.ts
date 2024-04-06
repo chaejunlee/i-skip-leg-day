@@ -6,6 +6,7 @@ import {
 import { days, sets, splits, workouts } from "@/server/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 const workoutInputSchema = z.object({
@@ -14,6 +15,8 @@ const workoutInputSchema = z.object({
   rpe: z.number(),
   weight: z.number(),
 });
+
+const programId = 2;
 
 export const workoutRouter = createTRPCRouter({
   getWorkoutOptions: publicProcedure.query(async ({ ctx }) => {
@@ -25,8 +28,12 @@ export const workoutRouter = createTRPCRouter({
     };
   }),
   getSplits: publicProcedure.query(async ({ ctx }) => {
-    const splits = await ctx.db.query.splits.findMany();
-    return splits;
+    const _splits = await ctx.db
+      .select()
+      .from(splits)
+      .where(eq(splits.programId, programId))
+      .orderBy(splits.id);
+    return _splits;
   }),
   getDays: protectedProcedure.query(async ({ ctx }) => {
     const daysQuery = await ctx.db
@@ -72,7 +79,7 @@ export const workoutRouter = createTRPCRouter({
           weight: input.weight,
           description: "",
         });
-        revalidatePath("/workout/[dateId]", "page");
+        revalidatePath("/workout", "page");
       } catch (error) {
         console.error(error);
         throw Error("Error saving workout");
@@ -129,13 +136,19 @@ export const workoutRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const query = await ctx.db.insert(days).values({
-          splitId: input.splitId,
-          date: input.date,
-          userId: ctx.session.user.id,
-        });
+        const query = await ctx.db
+          .insert(days)
+          .values({
+            splitId: input.splitId,
+            date: input.date,
+            userId: ctx.session.user.id,
+          })
+          .returning();
+        if (!query?.[0]?.id) {
+          throw Error("Error saving day");
+        }
         revalidatePath("/", "page");
-        return { success: true, message: "Day saved", dateId: query.insertId };
+        return { success: true, message: "Day saved", dateId: query[0].id };
       } catch (error) {
         console.error(error);
         throw Error("Error saving day");
