@@ -1,14 +1,9 @@
-import { Client } from "@planetscale/database";
-import { drizzle } from "drizzle-orm/planetscale-serverless";
-
-import { env } from "@/env";
+import { sql } from "@vercel/postgres";
+import { drizzle } from "drizzle-orm/vercel-postgres";
 import * as schema from "./schema";
 
-export const db = drizzle(
-  new Client({
-    url: env.DATABASE_URL,
-  }).connection(),
-  { schema },
-);
+export const db = drizzle(sql, {
+  schema: schema,
+});
 
 export type DB = typeof db;
